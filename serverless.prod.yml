@@ -1,0 +1,45 @@
+service: speelycaptor
+
+provider:
+  name: aws
+  runtime: nodejs8.10
+  stackName: speelycaptor-${opt:stage, 'dev'}
+  stage: ${opt:stage, 'dev'}
+  region: ${file(config.json):speelycaptor-region}
+  timeout: 30
+  role: ${file(config.json):speelycaptor-iam-role}
+  deploymentBucket:
+    name: ${file(config.json):speelycaptor-bucket-id}
+  vpc:
+    securityGroupIds:
+      - ${file(config.json):speelycaptor-security-group}
+    subnetIds: ${file(config.json):speelycaptor-subnet-ids}
+  endpointType: private
+  resourcePolicy:
+    - Effect: Allow
+      Principal: "*"
+      Action: execute-api:Invoke
+      Resource:
+        - execute-api:/*/*/*
+      Condition:
+        StringEquals:
+          aws:sourceVpc: ${file(config.json):speelycaptor-vpc-id}
+
+functions:
+  app:
+    handler: index.handler
+    events:
+      - http:
+          method: get
+          path: convert
+          contentHandling: CONVERT_TO_BINARY
+
+plugins:
+  - serverless-offline
+  - serverless-apigw-binary
+  - serverless-apigwy-binary
+
+custom:
+  apigwBinary:
+    types:
+      - '*/*'
