@@ -5,8 +5,6 @@ if [[ -z "$1" ]]; then
 Usage: deploy.sh COMMAND [environment]
 
 Runs serverless with COMMAND to the given environment, assuming HUBS_OPS_PATH has the repo managing the requisite terraform resources.
-
-To deploy outside of Hubs infrastructure, just use sls deploy.
 "
   exit 1
 fi
@@ -32,4 +30,9 @@ popd
 cp serverless.prod.yml serverless.yml
 sls $COMMAND --stage $ENVIRONMENT
 cp serverless.public.yml serverless.yml
+
+if [[ "$ENVIRONMENT" -eq "dev" ]]; then
+  sls $COMMAND --stage public
+fi
+
 rm config.json

@@ -32,14 +32,6 @@ functions:
       - http:
           method: get
           path: convert
-          contentHandling: CONVERT_TO_BINARY
 
 plugins:
   - serverless-offline
-  - serverless-apigw-binary
-  - serverless-apigwy-binary
-
-custom:
-  apigwBinary:
-    types:
-      - '*/*'

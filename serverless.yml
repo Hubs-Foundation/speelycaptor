@@ -4,7 +4,12 @@ provider:
   name: aws
   runtime: nodejs8.10
   stackName: speelycaptor-public
+  stage: public
+  region: ${file(config.json):speelycaptor-region}
   timeout: 30
+  role: ${file(config.json):speelycaptor-public-iam-role}
+  deploymentBucket:
+    name: ${file(config.json):speelycaptor-public-bucket-id}
   usagePlan:
     quota:
       limit: 1000
@@ -16,18 +21,13 @@ provider:
 functions:
   app:
     handler: index.handler
+    environment:
+      scratchBucketRegion: ${file(config.json):speelycaptor-bucket-id}
+      scratchBucketId: ${file(config.json):speelycaptor-scratch-bucket-id}
     events:
       - http:
           method: get
           path: convert
-          contentHandling: CONVERT_TO_BINARY
 
 plugins:
   - serverless-offline
-  - serverless-apigw-binary
-  - serverless-apigwy-binary
-
-custom:
-  apigwBinary:
-    types:
-      - '*/*'
