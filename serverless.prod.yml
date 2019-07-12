@@ -6,7 +6,8 @@ provider:
   stackName: speelycaptor-${opt:stage, 'dev'}
   stage: ${opt:stage, 'dev'}
   region: ${file(config.json):speelycaptor-region}
-  timeout: 30
+  timeout: 120
+  memorySize: 3000
   role: ${file(config.json):speelycaptor-iam-role}
   deploymentBucket:
     name: ${file(config.json):speelycaptor-bucket-id}
@@ -26,8 +27,20 @@ provider:
           aws:sourceVpc: ${file(config.json):speelycaptor-vpc-id}
 
 functions:
-  app:
-    handler: index.handler
+  initialize:
+    handler: index.init
+    environment:
+      scratchBucketRegion: ${file(config.json):speelycaptor-region}
+      scratchBucketId: ${file(config.json):speelycaptor-public-scratch-bucket-id}
+    events:
+      - http:
+          method: get
+          path: init
+  convert:
+    handler: index.convert
+    environment:
+      scratchBucketRegion: ${file(config.json):speelycaptor-region}
+      scratchBucketId: ${file(config.json):speelycaptor-public-scratch-bucket-id}
     events:
       - http:
           method: get

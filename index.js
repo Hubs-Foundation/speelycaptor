@@ -1,7 +1,122 @@
-module.exports.handler = async function handler(event, context, callback) {
+const {join} = require('path');
+const {tmpdir} = require('os');
+const {unlink, createReadStream, createWriteStream, readdirSync, existsSync, mkdirSync} = require('fs');
+const {spawn, execFile} = require('child_process');
+const VIDEO_MAX_DURATION = 600;
+const AWS = require('aws-sdk');
+
+// Relies upon https://github.com/serverlesspub/ffmpeg-aws-lambda-layer being deployed
+
+// Shamelessly taken from https://gist.github.com/6174/6062387
+const createKey = () =>
+  Math.random()
+    .toString(36)
+    .substring(2, 15) +
+  Math.random()
+    .toString(36)
+    .substring(2, 15);
+
+const log = console.log;
+
+/** @type string **/
+const tempDir = process.env['TEMP'] || tmpdir();
+const tempFile = join(tempDir, 'tempFile');
+
+// https://github.com/binoculars/aws-lambda-ffmpeg
+function ffprobe() {
+	log('Starting FFprobe');
+
+	return new Promise((resolve, reject) => {
+		const args = [
+			'-v', 'quiet',
+			'-print_format', 'json',
+			'-show_format',
+			'-show_streams',
+			'-i', 'tempFile'
+		];
+		const opts = {
+			cwd: tempDir
+		};
+		const cb = (error, stdout) => {
+			if (error)
+				reject(error);
+
+			log(stdout);
+
+			const {streams, format} = JSON.parse(stdout);
+      log(JSON.stringify(streams))
+      log(JSON.stringify(format))
+
+			const hasVideoStream = streams.some(({codec_type, duration}) =>
+				codec_type === 'video' &&
+				(duration || format.duration) <= VIDEO_MAX_DURATION
+			);
+
+			if (!hasVideoStream)
+				reject('FFprobe: no valid video stream found');
+			else {
+				log('Valid video stream found. FFprobe finished.');
+				resolve();
+			}
+		};
+
+		execFile('ffprobe', args, opts, cb)
+			.on('error', reject);
+	});
+}
+
+// Perform a GET to /init to get a upload URL and key to pass to convert for conversion
+module.exports.init = async function init(event, context, callback) {
+  const { scratchBucketId, scratchBucketRegion } = process.env;
+  const key = createKey();
+
+  const s3 = new AWS.S3({
+    region: scratchBucketRegion,
+    signatureVersion: "v4"
+  });
+
+  const uploadUrl = s3.getSignedUrl("putObject", {
+    Bucket: scratchBucketId,
+    Key: key,
+    Expires: 240
+  });
+
   return callback(null, {
     statusCode: 200,
-    body: "OK",
+    body: JSON.stringify({ uploadUrl, key }),
+    isBase64Encoded: false
+  });
+};
+
+module.exports.convert = async function convert(event, context, callback) {
+  const queryStringParameters = event.queryStringParameters || {};
+
+  const { scratchBucketId, scratchBucketRegion } = process.env;
+  const s3 = new AWS.S3({
+    region: scratchBucketRegion,
+    signatureVersion: "v4"
+  });
+
+  const sourceKey = queryStringParameters.key || "odbpaimwsvp475ha2gphik";
+  const destKey = createKey();
+
+  let readStream;
+  
+  await new Promise((resolve, reject) => {
+    s3
+      .getObject({ Bucket: scratchBucketId, Key: sourceKey })
+      .on("error", error => reject(`S3 Download Error: ${error}`))
+      .createReadStream()
+      .on('end', () => { log('Download finished'); resolve(); })
+      .on('error', reject)
+      .pipe(createWriteStream(tempFile));
+  });
+
+  await ffprobe();
+
+  return callback(null, {
+    statusCode: 200,
+    body: destKey,
     isBase64Encoded: false
   });
 };
