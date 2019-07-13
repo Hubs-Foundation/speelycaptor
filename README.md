@@ -1,5 +1,5 @@
 # speelycaptor
-AWS Lambda for performing video conversions
+AWS Lambda for performing video conversions via `ffmpeg`
 
 API:
 - GET `/init` to get a signed S3 URL to post a video to. Response is JSON with two keys, `uploadUrl` and `key`.
