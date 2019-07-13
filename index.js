@@ -1,9 +1,9 @@
-const {join} = require('path');
-const {tmpdir} = require('os');
-const {unlink, createReadStream, createWriteStream, readdirSync, existsSync, mkdirSync} = require('fs');
-const {spawn, execFile} = require('child_process');
+const { join } = require("path");
+const { tmpdir } = require("os");
+const { unlink, createReadStream, createWriteStream, existsSync, mkdirSync } = require("fs");
+const { spawn, execFile } = require("child_process");
 const VIDEO_MAX_DURATION = 600;
-const AWS = require('aws-sdk');
+const AWS = require("aws-sdk");
 
 // Relies upon https://github.com/serverlesspub/ffmpeg-aws-lambda-layer being deployed
 
@@ -18,51 +18,67 @@ const createKey = () =>
 
 const log = console.log;
 
-/** @type string **/
-const tempDir = process.env['TEMP'] || tmpdir();
-const tempFile = join(tempDir, 'tempFile');
+const tempDir = process.env["TEMP"] || tmpdir();
+const tempFile = join(tempDir, "tempFile");
+const outputDir = join(tempDir, "tempOutput");
+
+if (!existsSync(outputDir)) mkdirSync(outputDir);
 
 // https://github.com/binoculars/aws-lambda-ffmpeg
 function ffprobe() {
-	log('Starting FFprobe');
+  log("Starting FFprobe");
 
-	return new Promise((resolve, reject) => {
-		const args = [
-			'-v', 'quiet',
-			'-print_format', 'json',
-			'-show_format',
-			'-show_streams',
-			'-i', 'tempFile'
-		];
-		const opts = {
-			cwd: tempDir
-		};
-		const cb = (error, stdout) => {
-			if (error)
-				reject(error);
+  return new Promise((resolve, reject) => {
+    const args = ["-v", "quiet", "-print_format", "json", "-show_format", "-show_streams", "-i", "tempFile"];
+    const opts = {
+      cwd: tempDir
+    };
+    const cb = (error, stdout) => {
+      if (error) reject(error);
 
-			log(stdout);
+      log(stdout);
 
-			const {streams, format} = JSON.parse(stdout);
-      log(JSON.stringify(streams))
-      log(JSON.stringify(format))
+      const { streams, format } = JSON.parse(stdout);
+      log(JSON.stringify(streams));
+      log(JSON.stringify(format));
 
-			const hasVideoStream = streams.some(({codec_type, duration}) =>
-				codec_type === 'video' &&
-				(duration || format.duration) <= VIDEO_MAX_DURATION
-			);
+      const hasVideoStream = streams.some(
+        ({ codec_type, duration }) => codec_type === "video" && (duration || format.duration) <= VIDEO_MAX_DURATION
+      );
 
-			if (!hasVideoStream)
-				reject('FFprobe: no valid video stream found');
-			else {
-				log('Valid video stream found. FFprobe finished.');
-				resolve();
-			}
-		};
+      if (!hasVideoStream) reject("FFprobe: no valid video stream found");
+      else {
+        log("Valid video stream found. FFprobe finished.");
+        resolve();
+      }
+    };
 
-		execFile('ffprobe', args, opts, cb)
-			.on('error', reject);
-	});
+    execFile("ffprobe", args, opts, cb).on("error", reject);
+  });
+}
+
+function ffmpeg(ffmpegArgs, destKey) {
+  log("Starting FFmpeg");
+
+  return new Promise((resolve, reject) => {
+    const args = ["-y", "-loglevel", "warning", "-i", "../tempFile", ...ffmpegArgs.split(" "), destKey];
+    const opts = {
+      cwd: outputDir
+    };
+
+    spawn("ffmpeg", args, opts)
+      .on("message", msg => log(msg))
+      .on("error", reject)
+      .on("close", resolve);
+  });
+}
+
+function removeFile(localFilePath) {
+  log(`Deleting ${localFilePath}`);
+
+  return new Promise((resolve, reject) => {
+    unlink(localFilePath, (err, result) => (err ? reject(err) : resolve(result)));
+  });
 }
 
 // Perform a GET to /init to get a upload URL and key to pass to convert for conversion
@@ -99,24 +115,45 @@ module.exports.convert = async function convert(event, context, callback) {
 
   const sourceKey = queryStringParameters.key || "odbpaimwsvp475ha2gphik";
   const destKey = createKey();
+  const ffmpegArgs = queryStringParameters.args || "";
 
-  let readStream;
-  
   await new Promise((resolve, reject) => {
-    s3
-      .getObject({ Bucket: scratchBucketId, Key: sourceKey })
+    s3.getObject({ Bucket: scratchBucketId, Key: sourceKey })
       .on("error", error => reject(`S3 Download Error: ${error}`))
       .createReadStream()
-      .on('end', () => { log('Download finished'); resolve(); })
-      .on('error', reject)
+      .on("end", () => {
+        log("Download finished");
+        resolve();
+      })
+      .on("error", reject)
       .pipe(createWriteStream(tempFile));
   });
 
   await ffprobe();
+  await ffmpeg(ffmpegArgs, destKey);
+  await removeFile(tempFile);
+
+  const fileFullPath = join(outputDir, destKey);
+  const fileStream = createReadStream(fileFullPath);
+
+  log(`Uploading ${destKey}`);
+
+  await s3
+    .putObject({
+      Bucket: scratchBucketId,
+      Key: JSON.stringify(),
+      Body: fileStream,
+      ContentType: "application/octet-stream",
+      ContentEncoding: undefined,
+      ACL: "public-acl"
+    })
+    .promise();
+
+  removeFile(fileFullPath);
 
   return callback(null, {
     statusCode: 200,
-    body: destKey,
+    body: JSON.stringify({ url: `https://${scratchBucketId}.s3-${scratchBucketRegion}/${destKey}` }),
     isBase64Encoded: false
   });
 };

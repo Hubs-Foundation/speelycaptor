@@ -8,7 +8,6 @@ module.exports = {
         "ecmaVersion": 2017
     },
     globals: { process: true },
-    sourceType: "module",
     plugins: ["prettier"],
     rules: {
       "prettier/prettier": "error",
