@@ -5,12 +5,6 @@ const { spawn, execFile } = require("child_process");
 const VIDEO_MAX_DURATION = 600;
 const AWS = require("aws-sdk");
 
-// API:
-// Hit /init to get a URL to post a video to. Response has "uploadUrl" and "key".
-// Hit /convert with query args key=<key passed from init> and args=<ffmpeg args>, will return URL with output
-//
-// Relies upon https://github.com/serverlesspub/ffmpeg-aws-lambda-layer being deployed
-
 // Shamelessly taken from https://gist.github.com/6174/6062387
 const createKey = () =>
   Math.random()
