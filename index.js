@@ -5,6 +5,10 @@ const { spawn, execFile } = require("child_process");
 const VIDEO_MAX_DURATION = 600;
 const AWS = require("aws-sdk");
 
+// API:
+// Hit /init to get a URL to post a video to. Response has "uploadUrl" and "key".
+// Hit /convert with query args key=<key passed from init> and args=<ffmpeg args>, will return URL with output
+//
 // Relies upon https://github.com/serverlesspub/ffmpeg-aws-lambda-layer being deployed
 
 // Shamelessly taken from https://gist.github.com/6174/6062387
@@ -57,16 +61,15 @@ function ffprobe() {
   });
 }
 
-function ffmpeg(ffmpegArgs, destKey) {
+function ffmpeg(ffmpegArgs, destFile) {
   log("Starting FFmpeg");
 
   return new Promise((resolve, reject) => {
-    const args = ["-y", "-loglevel", "warning", "-i", "../tempFile", ...ffmpegArgs.split(" "), destKey];
-    const opts = {
-      cwd: outputDir
-    };
+    const args = ["-y", "-loglevel", "warning", "-i", tempFile, ...ffmpegArgs.split(" "), destFile];
 
-    spawn("ffmpeg", args, opts)
+    log(args);
+
+    spawn("ffmpeg", args, {})
       .on("message", msg => log(msg))
       .on("error", reject)
       .on("close", resolve);
@@ -113,9 +116,10 @@ module.exports.convert = async function convert(event, context, callback) {
     signatureVersion: "v4"
   });
 
-  const sourceKey = queryStringParameters.key || "odbpaimwsvp475ha2gphik";
+  const sourceKey = queryStringParameters.key;
+  const ffmpegArgs = queryStringParameters.args;
+
   const destKey = createKey();
-  const ffmpegArgs = queryStringParameters.args || "";
 
   await new Promise((resolve, reject) => {
     s3.getObject({ Bucket: scratchBucketId, Key: sourceKey })
@@ -129,31 +133,29 @@ module.exports.convert = async function convert(event, context, callback) {
       .pipe(createWriteStream(tempFile));
   });
 
+  const destFullPath = join(outputDir, destKey);
+
   await ffprobe();
-  await ffmpeg(ffmpegArgs, destKey);
+  await ffmpeg(ffmpegArgs, destFullPath);
   await removeFile(tempFile);
 
-  const fileFullPath = join(outputDir, destKey);
-  const fileStream = createReadStream(fileFullPath);
+  const fileStream = createReadStream(destFullPath);
+  const uploadConfig = {
+    Bucket: scratchBucketId,
+    Key: destKey,
+    Body: fileStream,
+    ACL: "public-read"
+  };
 
-  log(`Uploading ${destKey}`);
+  log(uploadConfig);
 
-  await s3
-    .putObject({
-      Bucket: scratchBucketId,
-      Key: JSON.stringify(),
-      Body: fileStream,
-      ContentType: "application/octet-stream",
-      ContentEncoding: undefined,
-      ACL: "public-acl"
-    })
-    .promise();
+  await s3.putObject(uploadConfig).promise();
 
-  removeFile(fileFullPath);
+  removeFile(destFullPath);
 
   return callback(null, {
     statusCode: 200,
-    body: JSON.stringify({ url: `https://${scratchBucketId}.s3-${scratchBucketRegion}/${destKey}` }),
+    body: JSON.stringify({ url: `https://${scratchBucketId}.s3-${scratchBucketRegion}.amazonaws.com/${destKey}` }),
     isBase64Encoded: false
   });
 };

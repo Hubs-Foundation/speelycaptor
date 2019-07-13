@@ -7,7 +7,7 @@ provider:
   stage: public
   region: ${file(config.json):speelycaptor-region}
   memorySize: 3000
-  timeout: 30
+  timeout: 120
   role: ${file(config.json):speelycaptor-public-iam-role}
   deploymentBucket:
     name: ${file(config.json):speelycaptor-public-bucket-id}
