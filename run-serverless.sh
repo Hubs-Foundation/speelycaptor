@@ -31,7 +31,7 @@ cp serverless.prod.yml serverless.yml
 sls $COMMAND --stage $ENVIRONMENT
 cp serverless.public.yml serverless.yml
 
-if [[ "$ENVIRONMENT" -eq "dev" ]]; then
+if [[ "$ENVIRONMENT" == "dev" ]]; then
   sls $COMMAND --stage public
 fi
 
