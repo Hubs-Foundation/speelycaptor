@@ -40,9 +40,13 @@ function ffprobe() {
       log(JSON.stringify(streams));
       log(JSON.stringify(format));
 
-      const hasVideoStream = streams.some(
-        ({ codec_type, duration }) => codec_type === "video" && (duration || format.duration) <= VIDEO_MAX_DURATION
-      );
+      const hasVideoStream = streams.some(({ codec_type, duration }) => {
+        if (codec_type !== "video") return false;
+
+        // Allow non-duration videos, currently known to be created by Oculus Browser
+        if (!duration && !format.duration) return true;
+        return (duration || format.duration) <= VIDEO_MAX_DURATION;
+      });
 
       if (!hasVideoStream) reject("FFprobe: no valid video stream found");
       else {
