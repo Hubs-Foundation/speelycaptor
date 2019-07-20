@@ -31,7 +31,7 @@ functions:
     handler: index.init
     environment:
       scratchBucketRegion: ${file(config.json):speelycaptor-region}
-      scratchBucketId: ${file(config.json):speelycaptor-public-scratch-bucket-id}
+      scratchBucketId: ${file(config.json):speelycaptor-scratch-bucket-id}
     events:
       - http:
           method: get
@@ -40,7 +40,7 @@ functions:
     handler: index.convert
     environment:
       scratchBucketRegion: ${file(config.json):speelycaptor-region}
-      scratchBucketId: ${file(config.json):speelycaptor-public-scratch-bucket-id}
+      scratchBucketId: ${file(config.json):speelycaptor-scratch-bucket-id}
     events:
       - http:
           method: get
