@@ -38,6 +38,8 @@ functions:
           path: init
   convert:
     handler: index.convert
+    layers:
+      - ${file(config.json):ffmpeg-lambda-layer-arn}
     environment:
       scratchBucketRegion: ${file(config.json):speelycaptor-region}
       scratchBucketId: ${file(config.json):speelycaptor-scratch-bucket-id}
