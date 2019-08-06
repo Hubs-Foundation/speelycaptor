@@ -133,7 +133,7 @@ module.exports.convert = async function convert(event, context, callback) {
 
   const destFullPath = join(outputDir, destKey);
 
-  await ffprobe();
+  //await ffprobe();
   await ffmpeg(ffmpegArgs, destFullPath);
   await removeFile(tempFile);
 
