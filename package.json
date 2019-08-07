@@ -1,6 +1,6 @@
 {
   "name": "speelycaptor",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Perform video conversions",
   "main": "index.js",
   "keywords": [],
@@ -17,6 +17,6 @@
     "serverless-offline": "^4.9.4"
   },
   "scripts": {
-    "release": "np && git push"
+    "release": "npm run build && git commit --allow-empty -am 'update builds' && git push && np && git push"
   }
 }
