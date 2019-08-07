@@ -32,12 +32,13 @@ popd
 
 mv node_modules node_modules_tmp
 env npm_config_arch=x64 npm_config_platform=linux npm_config_target=10.16.1 npm ci
-HUBS_OPS_PATH=$HUBS_OPS_PATH ./run-serverless.sh package $ENVIRONMENT
+zip -9 -y -r ${NAME}-${VERSION}.zip *.js node_modules
 curl https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz | tar xJ
 mv ffmpeg*/ffmpeg .
 mv ffmpeg*/ffprobe .
-zip -m -u .serverless/$NAME.zip ffmpeg ffprobe
-aws s3 cp --region $BUCKET_REGION --acl public-read .serverless/$NAME.zip s3://$BUCKET/lambdas/$NAME/${NAME}-${VERSION}.zip
-rm -rf ffmpeg*
+zip -m -u ${NAME}-${VERSION}.zip ffmpeg ffprobe
+aws s3 cp --region $BUCKET_REGION --acl public-read ${NAME}-${VERSION}.zip s3://$BUCKET/lambdas/$NAME/${NAME}-${VERSION}.zip
 rm -rf node_modules
 mv node_modules_tmp node_modules
+rm ${NAME}-${VERSION}.zip
+rm -rf ffmpeg*
