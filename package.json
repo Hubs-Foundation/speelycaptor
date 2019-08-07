@@ -17,6 +17,6 @@
     "serverless-offline": "^4.9.4"
   },
   "scripts": {
-    "release": "npm run build && git commit --allow-empty -am 'update builds' && git push && np && git push"
+    "release": "np && git push"
   }
 }
