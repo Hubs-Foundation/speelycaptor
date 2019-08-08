@@ -1,3 +1,5 @@
+process.env.PATH = process.env.PATH + ":" + process.env.LAMBDA_TASK_ROOT;
+
 const { join } = require("path");
 const { tmpdir } = require("os");
 const { unlink, createReadStream, createWriteStream, existsSync, mkdirSync } = require("fs");
