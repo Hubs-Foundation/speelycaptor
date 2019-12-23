@@ -26,8 +26,8 @@ NAME=$(cat package.json | jq -r ".name")
 
 DIR=$(pwd)
 pushd $HUBS_OPS_PATH/terraform
-BUCKET=$(./grunt_local.sh output ret $ENVIRONMENT -json | jq 'with_entries(.value |= .value)' | jq -r ".polycosm_assets_bucket_id")
-BUCKET_REGION=$(./grunt_local.sh output ret $ENVIRONMENT -json | jq 'with_entries(.value |= .value)' | jq -r ".polycosm_assets_bucket_region")
+BUCKET=$(./grunt_local.sh output ret $ENVIRONMENT -json | jq 'with_entries(.value |= .value)' | jq -r ".polycosm_sam_bucket_id")
+BUCKET_REGION=$(./grunt_local.sh output ret $ENVIRONMENT -json | jq 'with_entries(.value |= .value)' | jq -r ".polycosm_sam_bucket_region")
 popd
 
 mv node_modules node_modules_tmp
@@ -37,8 +37,10 @@ curl https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.x
 mv ffmpeg*/ffmpeg .
 mv ffmpeg*/ffprobe .
 zip -m -u ${NAME}-${VERSION}.zip ffmpeg ffprobe
-aws s3 cp --region $BUCKET_REGION --acl public-read ${NAME}-${VERSION}.zip s3://$BUCKET/lambdas/$NAME/${NAME}-${VERSION}.zip
+sam package --region $BUCKET_REGION --template-file template-prod.yaml --output-template-file template-packaged.yaml --s3-bucket $BUCKET
+sam publish --region $BUCKET_REGION --template template-packaged.yaml
 rm -rf node_modules
+rm template-packaged.yaml
 mv node_modules_tmp node_modules
 rm ${NAME}-${VERSION}.zip
 rm -rf ffmpeg*

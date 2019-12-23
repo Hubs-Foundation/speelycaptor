@@ -1,0 +1,69 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Speelycaptor
+
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: Speelycaptor
+    Description: Video conversion lambda for Hubs Cloud
+    Author: Mozilla
+    SpdxLicenseId: MPL-2.0
+    LicenseUrl: LICENSE
+    ReadmeUrl: README.md
+    SemanticVersion: 0.1.2
+
+Parameters:
+  SpeelycaptorRoleArn:
+    Type: String
+  SpeelycaptorScratchBucketId:
+    Type: String
+  SpeelycaptorScratchBucketArn:
+    Type: String
+
+Resources:
+  InitFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: speelycaptor-0.1.2.zip
+      Handler: index.init
+      Runtime: nodejs10.x
+      Timeout: 30
+      MemorySize: 512
+      Events:
+        Init:
+          Type: Api
+          Properties:
+            Path: /init
+            Method: get
+      Role:
+        Ref: SpeelycaptorRoleArn
+      Environment:
+        Variables:
+          scratchBucketArn:
+            Ref: SpeelycaptorScratchBucketArn
+          scratchBucketId:
+            Ref: SpeelycaptorScratchBucketId
+
+  ConvertFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: speelycaptor-0.1.2.zip
+      Handler: index.convert
+      Runtime: nodejs10.x
+      Timeout: 300
+      MemorySize: 3000
+      Events:
+        Convert:
+          Type: Api
+          Properties:
+            Path: /convert
+            Method: get
+      Role:
+        Ref: SpeelycaptorRoleArn
+      Environment:
+        Variables:
+          scratchBucketArn:
+            Ref: SpeelycaptorScratchBucketArn
+          scratchBucketId:
+            Ref: SpeelycaptorScratchBucketId
