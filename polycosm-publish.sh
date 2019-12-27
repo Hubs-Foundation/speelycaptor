@@ -32,15 +32,22 @@ popd
 
 mv node_modules node_modules_tmp
 env npm_config_arch=x64 npm_config_platform=linux npm_config_target=10.16.1 npm ci
-zip -9 -y -r ${NAME}-${VERSION}.zip *.js node_modules
+zip -9 -y -r ${NAME}.zip *.js node_modules
 curl https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz | tar xJ
 mv ffmpeg*/ffmpeg .
 mv ffmpeg*/ffprobe .
-zip -m -u ${NAME}-${VERSION}.zip ffmpeg ffprobe
-sam package --region $BUCKET_REGION --template-file template-prod.yaml --output-template-file template-packaged.yaml --s3-bucket $BUCKET
-sam publish --region $BUCKET_REGION --template template-packaged.yaml
-rm -rf node_modules
+zip -m -u ${NAME}.zip ffmpeg ffprobe
+echo "sam package --region $BUCKET_REGION --template-file template.yaml --output-template-file template-packaged.yaml --s3-bucket $BUCKET"
+sam package --region $BUCKET_REGION --template-file template.yaml --output-template-file template-packaged.yaml --s3-bucket $BUCKET
+
+for samregion in us-east-1 #us-east-2 us-west-1 us-west-2 ap-northeast-1 eu-west-1
+do
+  sam publish --region $samregion --template template-packaged.yaml
+  APPLICATION_ARN=$(aws --region $samregion serverlessrepo list-applications | jq -r '.Applications | . [] | .ApplicationId' | grep $NAME)
+  aws --region $samregion serverlessrepo put-application-policy --application-id "$APPLICATION_ARN" --statements Principals=assets.marketplace.amazonaws.com,Actions=Deploy
+done
 rm template-packaged.yaml
+rm -rf node_modules
 mv node_modules_tmp node_modules
-rm ${NAME}-${VERSION}.zip
+rm ${NAME}.zip
 rm -rf ffmpeg*
