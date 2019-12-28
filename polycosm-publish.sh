@@ -44,7 +44,7 @@ for samregion in us-east-1 #us-east-2 us-west-1 us-west-2 ap-northeast-1 eu-west
 do
   sam publish --region $samregion --template template-packaged.yaml
   APPLICATION_ARN=$(aws --region $samregion serverlessrepo list-applications | jq -r '.Applications | . [] | .ApplicationId' | grep $NAME)
-  aws --region $samregion serverlessrepo put-application-policy --application-id "$APPLICATION_ARN" --statements Principals=assets.marketplace.amazonaws.com,Actions=Deploy
+  aws --region $samregion serverlessrepo put-application-policy --application-id "$APPLICATION_ARN" --statements Principals=*,Actions=Deploy
 done
 rm template-packaged.yaml
 rm -rf node_modules
