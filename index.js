@@ -155,7 +155,12 @@ module.exports.convert = async function convert(event, context, callback) {
 
   return callback(null, {
     statusCode: 200,
-    body: JSON.stringify({ url: `https://${scratchBucketId}.s3-${scratchBucketRegion}.amazonaws.com/${destKey}` }),
+    body: JSON.stringify({
+      url:
+        scratchBucketRegion === "us-east-1"
+          ? `https://${scratchBucketId}.s3.amazonaws.com/${destKey}`
+          : `https://${scratchBucketId}.s3-${scratchBucketRegion}.amazonaws.com/${destKey}`
+    }),
     isBase64Encoded: false
   });
 };
