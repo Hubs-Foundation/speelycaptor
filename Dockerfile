@@ -1,6 +1,7 @@
 FROM node:lts-alpine
 # FROM node:lts-buster
 WORKDIR /app
+RUN apk add  --no-cache ffmpeg
 
 COPY package.json package-lock.json /app
 RUN npm ci
