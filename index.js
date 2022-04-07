@@ -84,15 +84,29 @@ function removeFile(localFilePath) {
   });
 }
 
+function makeS3Client(){
+  if (process.env.cloud == "gcp") {
+    return new AWS.S3({
+      region: "auto",
+      signatureVersion: "v4",
+      endpoint: "https://storage.googleapis.com",
+      accessKeyId: process.env.GCP_SA_HMAC_KEY,
+      secretAccessKey: process.env.GCP_SA_HMAC_SECRET
+    });
+
+  }
+  return new AWS.S3({
+    region: scratchBucketRegion,
+    signatureVersion: "v4"
+  });
+}
+
 // Perform a GET to /init to get a upload URL and key to pass to convert for conversion
 module.exports.init = async function init(event, context, callback) {
   const { scratchBucketId, scratchBucketRegion } = process.env;
   const key = createKey();
 
-  const s3 = new AWS.S3({
-    region: scratchBucketRegion,
-    signatureVersion: "v4"
-  });
+  const s3 = makeS3Client()
 
   const uploadUrl = s3.getSignedUrl("putObject", {
     Bucket: scratchBucketId,
@@ -111,10 +125,7 @@ module.exports.convert = async function convert(event, context, callback) {
   const queryStringParameters = event.queryStringParameters || {};
 
   const { scratchBucketId, scratchBucketRegion } = process.env;
-  const s3 = new AWS.S3({
-    region: scratchBucketRegion,
-    signatureVersion: "v4"
-  });
+  const s3 = makeS3Client()
 
   const sourceKey = queryStringParameters.key;
   const ffmpegArgs = queryStringParameters.args;
