@@ -85,7 +85,7 @@ function removeFile(localFilePath) {
 }
 
 function makeS3Client(){
-  if (process.env.cloud == "gcp") {
+  if (process.env.CLOUD == "gcp") {
     return new AWS.S3({
       region: "auto",
       signatureVersion: "v4",
