@@ -96,7 +96,7 @@ function makeS3Client(){
 
   }
   return new AWS.S3({
-    region: scratchBucketRegion,
+    region: process.env.scratchBucketRegion,
     signatureVersion: "v4"
   });
 }
@@ -151,12 +151,10 @@ module.exports.convert = async function convert(event, context, callback) {
   await removeFile(tempFile);
 
   const fileStream = createReadStream(destFullPath);
-  const uploadConfig = {
-    Bucket: scratchBucketId,
-    Key: destKey,
-    Body: fileStream,
-    ACL: "public-read"
-  };
+  const uploadConfig = process.env.CLOUD == "gcp"? 
+    { Bucket: scratchBucketId, Key: destKey, Body: fileStream}
+    :
+    { Bucket: scratchBucketId, Key: destKey, Body: fileStream, ACL: "public-read"};
 
   log(uploadConfig);
 
@@ -167,10 +165,13 @@ module.exports.convert = async function convert(event, context, callback) {
   return callback(null, {
     statusCode: 200,
     body: JSON.stringify({
-      url:
-        scratchBucketRegion === "us-east-1"
-          ? `https://${scratchBucketId}.s3.amazonaws.com/${destKey}`
-          : `https://${scratchBucketId}.s3-${scratchBucketRegion}.amazonaws.com/${destKey}`
+      url: process.env.CLOUD == "gcp"? 
+        `https://${scratchBucketId}.storage.googleapis.com/${destKey}`
+        :
+        scratchBucketRegion === "us-east-1"?
+          `https://${scratchBucketId}.s3.amazonaws.com/${destKey}`
+          :
+          `https://${scratchBucketId}.s3-${scratchBucketRegion}.amazonaws.com/${destKey}`
     }),
     isBase64Encoded: false
   });
