@@ -19,15 +19,12 @@ const createKey = () =>
 const log = console.log;
 
 const tempDir = process.env["TEMP"] || tmpdir();
-const tempFileName=require('tmp').tmpNameSync();
-console.log('tempFileName: ', tempFileName);
-const tempFile = join(tempDir, tempFileName);
 const outputDir = join(tempDir, "tempOutput");
 
 if (!existsSync(outputDir)) mkdirSync(outputDir);
 
 // https://github.com/binoculars/aws-lambda-ffmpeg
-function ffprobe() {
+function ffprobe(tempFileName) {
   log("Starting FFprobe");
 
   return new Promise((resolve, reject) => {
@@ -63,7 +60,7 @@ function ffprobe() {
   });
 }
 
-function ffmpeg(ffmpegArgs, destFile) {
+function ffmpeg(ffmpegArgs, destFile, tempFile) {
   log("Starting FFmpeg");
 
   return new Promise((resolve, reject) => {
@@ -124,6 +121,10 @@ module.exports.init = async function init(event, context, callback) {
 };
 
 module.exports.convert = async function convert(event, context, callback) {
+  const tempFileName=require('tmp').tmpNameSync();
+  console.log('tempFileName: ', tempFileName);
+  const tempFile = join(tempDir, tempFileName);
+
   const queryStringParameters = event.queryStringParameters || {};
 
   const { scratchBucketId, scratchBucketRegion } = process.env;
@@ -148,8 +149,8 @@ module.exports.convert = async function convert(event, context, callback) {
 
   const destFullPath = join(outputDir, destKey);
 
-  //await ffprobe();
-  await ffmpeg(ffmpegArgs, destFullPath);
+  //await ffprobe(tempFileName);
+  await ffmpeg(ffmpegArgs, destFullPath, tempFile);
   await removeFile(tempFile);
 
   const fileStream = createReadStream(destFullPath);
