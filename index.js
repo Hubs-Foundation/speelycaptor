@@ -123,8 +123,7 @@ module.exports.init = async function init(event, context, callback) {
 module.exports.convert = async function convert(event, context, callback) {
   console.log('event: ', event);
 
-  const tempFileName=event.tempFileName;
-  const tempFile = join(tempDir, tempFileName);
+  const tempFile=event.tempFile;
 
   const queryStringParameters = event.queryStringParameters || {};
 
