@@ -103,6 +103,8 @@ function makeS3Client(){
 
 // Perform a GET to /init to get a upload URL and key to pass to convert for conversion
 module.exports.init = async function init(event, context, callback) {
+  console.log("[lambda.init] event:", event)
+
   const { scratchBucketId, scratchBucketRegion } = process.env;
   const key = createKey();
 
@@ -122,6 +124,8 @@ module.exports.init = async function init(event, context, callback) {
 };
 
 module.exports.convert = async function convert(event, context, callback) {
+  console.log("[lambda.convert] event:", event)
+
   const queryStringParameters = event.queryStringParameters || {};
 
   const { scratchBucketId, scratchBucketRegion } = process.env;
