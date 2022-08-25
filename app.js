@@ -9,11 +9,14 @@ app.get('/_healthz', function (req, res) {
 
 
 app.get('/init', function (req, res) {
-    console.log(req.query)
-
+  console.log(req.query)
+  const tempFileName = require('tmp').tmpNameSync()
+  console.log("tempFileName: ",tempFileName)
     lambda.init(
-        {queryStringParameters: req.query}, 
-        null,
+      {
+        queryStringParameters: req.query,
+        tempFileName: tempFileName,
+      },         null,
         async function (something, callback){
             console.log("callback: ", callback)
             res.status(callback.statusCode).header(callback.headers).send(callback.body)
