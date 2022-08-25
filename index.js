@@ -19,7 +19,9 @@ const createKey = () =>
 const log = console.log;
 
 const tempDir = process.env["TEMP"] || tmpdir();
-const tempFile = join(tempDir, "tempFile");
+const tempFileName=require('tmp').tmpNameSync();
+console.log('tempFileName: ', tempFileName);
+const tempFile = join(tempDir, tempFileName);
 const outputDir = join(tempDir, "tempOutput");
 
 if (!existsSync(outputDir)) mkdirSync(outputDir);
@@ -29,7 +31,7 @@ function ffprobe() {
   log("Starting FFprobe");
 
   return new Promise((resolve, reject) => {
-    const args = ["-v", "quiet", "-print_format", "json", "-show_format", "-show_streams", "-i", "tempFile"];
+    const args = ["-v", "quiet", "-print_format", "json", "-show_format", "-show_streams", "-i", tempFileName];
     const opts = {
       cwd: tempDir
     };
