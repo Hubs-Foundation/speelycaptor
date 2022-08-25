@@ -121,8 +121,9 @@ module.exports.init = async function init(event, context, callback) {
 };
 
 module.exports.convert = async function convert(event, context, callback) {
-  const tempFileName=require('tmp').tmpNameSync();
-  console.log('tempFileName: ', tempFileName);
+  console.log('event: ', event);
+
+  const tempFileName=event.tempFileName;
   const tempFile = join(tempDir, tempFileName);
 
   const queryStringParameters = event.queryStringParameters || {};

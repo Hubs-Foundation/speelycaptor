@@ -23,9 +23,11 @@ app.get('/init', function (req, res) {
 
   app.get('/convert', function (req, res) {
     console.log(req.query)
-
     lambda.convert(
-        {queryStringParameters: req.query}, 
+        {
+          queryStringParameters: req.query,
+          tempFileName: require('tmp').tmpNameSync()
+        }, 
         null,
         async function (something, callback){
             console.log("callback: ", callback)
