@@ -19,8 +19,10 @@ const createKey = () =>
 const log = console.log;
 
 const tempDir = process.env["TEMP"] || tmpdir();
-const tempFile = join(tempDir, "tempFile");
-const outputDir = join(tempDir, "tempOutput");
+const crypto = require('crypto')
+tempFileName = crypto.randomUUID()
+const tempFile = join(tempDir, tempFileName);
+const outputDir = join(tempDir, tempFileName + "_output");
 
 if (!existsSync(outputDir)) mkdirSync(outputDir);
 
@@ -29,7 +31,7 @@ function ffprobe() {
   log("Starting FFprobe");
 
   return new Promise((resolve, reject) => {
-    const args = ["-v", "quiet", "-print_format", "json", "-show_format", "-show_streams", "-i", "tempFile"];
+    const args = ["-v", "quiet", "-print_format", "json", "-show_format", "-show_streams", "-i", tempFileName];
     const opts = {
       cwd: tempDir
     };
