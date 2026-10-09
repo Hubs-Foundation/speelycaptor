@@ -7,12 +7,12 @@ Metadata:
   AWS::ServerlessRepo::Application:
     Name: speelycaptor
     Description: Video conversion lambda for Hubs Cloud
-    Author: Mozilla
+    Author: Mozilla (Original Author), Hubs Foundation (Current Maintainer)
     SpdxLicenseId: MPL-2.0
     LicenseUrl: LICENSE
     ReadmeUrl: README.md
-    HomePageUrl: https://github.com/mozilla/speelycaptor
-    SourceCodeUrl: https://github.com/mozilla/speelycaptor
+    HomePageUrl: https://github.com/Hubs-Foundation/speelycaptor
+    SourceCodeUrl: https://github.com/Hubs-Foundation/speelycaptor
     SemanticVersion: 0.1.2
 
 Parameters:

@@ -12,7 +12,7 @@ fi
 if [[ -z "$HUBS_OPS_PATH" ]]; then
   echo -e "To use this deploy script, you need to clone out the hubs-ops repo
 
-git clone git@github.com:mozilla/hubs-ops.git
+git clone git@github.com:Hubs-Foundation/hubs-ops.git
 
 Then set HUBS_OPS_PATH to point to the cloned repo."
   exit 1
